@@ -5,81 +5,113 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Scooter display</title>
 <style>
-:root{--bg:#101216;--panel:#171a20;--line:#2b303b;--fg:#e9ecf2;--mut:#8c94a6;--amber:#ffb43a;--r:#ff5a4d;--g:#3ddc84;--b:#4da3ff}
+:root{
+  --bg:#120a1f;--panel:#1b1030;--field:#271a45;--line:#3b2962;
+  --fg:#f1ebfc;--mut:#a899c8;--acc:#b98cff;--accfg:#1a0b2e;--bad:#ff8a9a;--good:#9cf2bd;
+}
+:root[data-theme="bw"]{
+  --bg:#0a0a0a;--panel:#141414;--field:#212121;--line:#363636;
+  --fg:#f4f4f4;--mut:#8f8f8f;--acc:#ffffff;--accfg:#000000;--bad:#d9d9d9;--good:#ffffff;
+}
 *{box-sizing:border-box}
-body{margin:0 auto;max-width:620px;padding:14px;background:var(--bg);color:var(--fg);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
-h1{font-size:20px;margin:2px 0 14px;display:flex;justify-content:space-between;align-items:baseline;gap:10px}
-h1 small{font-size:13px;color:var(--mut);font-weight:400}
-h1 small.ok{color:var(--g)}
-section{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--amber);border-radius:6px;padding:12px 14px;margin-bottom:14px}
+body{margin:0 auto;max-width:620px;padding:16px 14px 40px;background:var(--bg);color:var(--fg);
+  font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+h1{font-size:21px;margin:0;letter-spacing:.01em}
+.tools{display:flex;gap:6px}
+.ghost{background:transparent;border:1px solid var(--line);color:var(--mut);padding:5px 10px;font-size:13px}
+.chip{display:inline-block;margin:0 0 14px;padding:3px 10px;border:1px solid var(--line);border-radius:99px;color:var(--mut);font-size:13px}
+.chip.ok{color:var(--good);border-color:var(--good)}
+section{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--acc);border-radius:8px;padding:12px 14px;margin-bottom:14px}
 h2{font-size:15px;margin:0 0 10px}
 .row{display:flex;align-items:center;gap:10px;margin:9px 0}
 .row label{flex:0 0 98px;color:var(--mut)}
-.row output{flex:0 0 36px;text-align:right}
-input[type=range]{flex:1;accent-color:var(--amber)}
-button,select,input[type=text]{background:#222733;color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:8px 12px;font:inherit}
+.row output{flex:0 0 36px;text-align:right;font-family:ui-monospace,Menlo,Consolas,monospace}
+input[type=range]{flex:1;accent-color:var(--acc)}
+button,select,input[type=text]{background:var(--field);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:8px 12px;font:inherit}
 input[type=text]{flex:1;min-width:0}
 button{cursor:pointer}
-button.on{background:var(--amber);border-color:var(--amber);color:#1b1200}
-button.danger{border-color:var(--r);color:var(--r)}
-button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--b);outline-offset:1px}
+button:disabled{opacity:.4;cursor:not-allowed}
+button.on{background:var(--acc);border-color:var(--acc);color:var(--accfg)}
+button.danger{border-color:var(--bad);color:var(--bad)}
+button:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 .btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
-.hint{color:var(--mut);font-size:13px;margin:6px 0 0}
-.warn{color:var(--r)}
+.hint{color:var(--mut);font-size:13px;margin:8px 0 0}
+.warn{color:var(--bad);font-size:14px;margin:8px 0 0}
 .grid{display:grid;gap:3px;touch-action:none;user-select:none;-webkit-user-select:none;margin:8px 0}
-.cell{aspect-ratio:1;background:#222733;border-radius:3px}
+.cell{aspect-ratio:1;background:var(--field);border-radius:3px}
 .cell.on{background:#fff}
+details summary{cursor:pointer;font-weight:600}
+#diag{margin-top:8px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+#diag div{display:flex;justify-content:space-between;gap:12px;padding:3px 0;border-bottom:1px solid var(--line)}
+#diag span{color:var(--mut)}
+#diag b{font-weight:400;text-align:right;word-break:break-word}
 </style>
 </head>
 <body>
-<h1>Scooter display <small id="st">не подключено</small></h1>
 
-<section>
-  <h2>Подключение</h2>
-  <div class="btns" style="margin-top:0"><button id="bc" class="on">Подключиться по Bluetooth</button><button id="bc2">Показать все устройства</button></div>
-  <p class="hint warn" id="warn"></p>
-  <p class="hint">Нужен Chrome на Android или на ПК. На Android включи Bluetooth и геолокацию. В списке выбери ScooterDisplay.</p>
-</section>
-
-<section>
-  <h2>Источник данных</h2>
-  <div class="btns" style="margin-top:0"><button id="m0" class="on">Демо</button><button id="m1">Ручной</button></div>
-  <p class="hint">В демо скорость, ток и заряд меняются сами. Любой ползунок ниже переключает в ручной режим.</p>
-</section>
-
-<section><h2>Главный экран и данные</h2><div id="sl"></div><div class="btns" id="tg"></div></section>
-
-<section><h2>Иконки парного экрана</h2><div id="ic"></div></section>
-
-<section>
-  <h2>Свой текст</h2>
-  <div class="row"><label>Полоса</label><input type="text" id="t1" maxlength="60" placeholder="HELLO"><button id="b1">Показать</button><button id="c1">Убрать</button></div>
-  <div class="row"><label>Матрица</label><input type="text" id="t2" maxlength="60" placeholder="HI"><button id="b2">Показать</button><button id="c2">Убрать</button></div>
-  <p class="hint">Латиница, цифры и знаки - . : ! / % + = ?  Длинный текст бежит.</p>
-</section>
-
-<section>
-  <h2>Рисунок</h2>
-  <p class="hint" style="margin:0">Полоса 35×5</p>
-  <div class="grid" id="gs"></div>
-  <div class="btns" style="margin-top:0"><button id="cs">Очистить</button><button id="fs">Залить</button><button id="os">Вернуть данные</button></div>
-  <p class="hint" style="margin-top:14px">Матрица 11×13</p>
-  <div class="grid" id="gm" style="max-width:230px"></div>
-  <div class="btns" style="margin-top:0"><button id="cm">Очистить</button><button id="fm">Залить</button><button id="om">Вернуть данные</button></div>
-</section>
-
-<section>
-  <h2>Проверка экранов</h2>
-  <div class="btns" style="margin-top:0">
-    <button data-t="1">Включить всё</button><button data-t="2">Бегущий пиксель</button><button data-t="3">Погасить</button><button data-t="0">Стоп</button>
+<header>
+  <h1>Scooter display</h1>
+  <div class="tools">
+    <button id="lg" class="ghost" aria-label="Language">EN</button>
+    <button id="th" class="ghost" aria-label="Theme">B&amp;W</button>
   </div>
-  <p class="hint">Режим «Включить всё» ограничивает яркость, чтобы не просадить питание.</p>
+</header>
+<div id="st" class="chip">-</div>
+
+<section>
+  <h2 data-i="h_conn"></h2>
+  <div class="btns" style="margin-top:0">
+    <button id="bc" class="on" data-i="connect"></button>
+    <button id="bc2" data-i="all"></button>
+  </div>
+  <p class="warn" id="warn" data-i=""></p>
+  <p class="hint" data-i="conn_hint"></p>
+  <details style="margin-top:10px">
+    <summary data-i="h_diag"></summary>
+    <div id="diag"></div>
+  </details>
 </section>
 
 <section>
-  <h2>Обновление прошивки</h2>
-  <div class="btns" style="margin-top:0"><button id="ota" class="danger">Включить режим обновления</button></div>
-  <p class="hint" id="otahint">ESP32 отключит Bluetooth и создаст Wi-Fi ScooterDisplay-OTA (пароль 12345678). Подключись к нему, открой http://192.168.4.1 и загрузи файл .ino.bin. Если ничего не загружать, через 5 минут она вернётся в обычный режим.</p>
+  <h2 data-i="h_src"></h2>
+  <div class="btns" style="margin-top:0"><button id="m0" class="on" data-i="demo"></button><button id="m1" data-i="manual"></button></div>
+  <p class="hint" data-i="src_hint"></p>
+</section>
+
+<section><h2 data-i="h_main"></h2><div id="sl"></div><div class="btns" id="tg"></div></section>
+
+<section><h2 data-i="h_icons"></h2><div id="ic"></div></section>
+
+<section>
+  <h2 data-i="h_text"></h2>
+  <div class="row"><label for="t1" data-i="l_strip"></label><input type="text" id="t1" maxlength="60" placeholder="HELLO"><button id="b1" data-i="show"></button><button id="c1" data-i="clear"></button></div>
+  <div class="row"><label for="t2" data-i="l_matrix"></label><input type="text" id="t2" maxlength="60" placeholder="HI"><button id="b2" data-i="show"></button><button id="c2" data-i="clear"></button></div>
+  <p class="hint" data-i="text_hint"></p>
+</section>
+
+<section>
+  <h2 data-i="h_paint"></h2>
+  <p class="hint" style="margin:0" data-i="p_strip"></p>
+  <div class="grid" id="gs"></div>
+  <div class="btns" style="margin-top:0"><button id="cs" data-i="p_clear"></button><button id="fs" data-i="p_fill"></button><button id="os" data-i="p_back"></button></div>
+  <p class="hint" style="margin-top:14px" data-i="p_matrix"></p>
+  <div class="grid" id="gm" style="max-width:230px"></div>
+  <div class="btns" style="margin-top:0"><button id="cm" data-i="p_clear"></button><button id="fm" data-i="p_fill"></button><button id="om" data-i="p_back"></button></div>
+</section>
+
+<section>
+  <h2 data-i="h_test"></h2>
+  <div class="btns" style="margin-top:0">
+    <button data-t="1" data-i="x1"></button><button data-t="2" data-i="x2"></button><button data-t="3" data-i="x3"></button><button data-t="0" data-i="x0"></button>
+  </div>
+  <p class="hint" data-i="test_hint"></p>
+</section>
+
+<section>
+  <h2 data-i="h_ota"></h2>
+  <div class="btns" style="margin-top:0"><button id="ota" class="danger" data-i="ota_btn"></button></div>
+  <p class="hint" id="otahint" data-i="ota_hint"></p>
 </section>
 
 <script>
@@ -88,88 +120,167 @@ const CHAR='6e400002-b5a3-f393-e0a9-e50e24dcca9e';
 const $=id=>document.getElementById(id);
 const enc=new TextEncoder();
 
-let dev=null, chr=null, busy=false, uid=0;
-const pend=new Map();           // ключ -> команда (последнее значение по ключу побеждает)
+/* ---------- языки ---------- */
+const I18N={
+ru:{
+ st_off:'не подключено',st_on:'подключено',st_conn:'подключаюсь...',st_nodev:'устройство не выбрано',st_err:'ошибка',st_send:'ошибка отправки',st_noconn:'нет подключения',
+ h_conn:'Подключение',connect:'Подключиться по Bluetooth',disconnect:'Отключиться',all:'Показать все устройства',
+ conn_hint:'Нужен Chrome на Android или на ПК. На Android включи Bluetooth и геолокацию. Не подключай плату через настройки телефона, страница подключается сама. Если список пуст: забудь ScooterDisplay в настройках Bluetooth и нажми EN на плате.',
+ w_insecure:'Страница открыта не по защищённому адресу. Нужен https:// (например, GitHub Pages), файл с телефона не подойдёт.',
+ w_nobt:'Этот браузер не поддерживает Web Bluetooth. Открой страницу в Chrome на Android или ПК (на iPhone не работает).',
+ h_diag:'Диагностика',d_secure:'Защищённый адрес (HTTPS)',d_api:'Web Bluetooth',d_adapter:'Bluetooth на устройстве',d_browser:'Браузер',d_err:'Последняя ошибка',
+ h_src:'Источник данных',demo:'Демо',manual:'Ручной',src_hint:'В демо скорость, ток и заряд меняются сами. Любой ползунок ниже переключает в ручной режим.',
+ h_main:'Главный экран и данные',l_speed:'Скорость',l_volts:'Вольты',l_amps:'Ток, A',l_pct:'Заряд, %',l_bright:'Яркость',
+ t_left:'Левый поворот',t_right:'Правый поворот',t_light:'Фара',t_err:'Ошибка (X)',t_mph:'mph',
+ h_icons:'Иконки парного экрана',i_0:'i',i_1:'X',i_2:'P',i_3:'Спидометр',
+ c0:'Выкл',c1:'Красный',c2:'Синий',c3:'Красный+синий',c4:'Зелёный',c5:'Красный+зелёный',c6:'Синий+зелёный',c7:'Все цвета',c8:'Авто',
+ h_text:'Свой текст',l_strip:'Полоса',l_matrix:'Матрица',show:'Показать',clear:'Убрать',text_hint:'Латиница, цифры и знаки - . : ! / % + = ?  Длинный текст бежит.',
+ h_paint:'Рисунок',p_strip:'Полоса 35×5',p_matrix:'Матрица 11×13',p_clear:'Очистить',p_fill:'Залить',p_back:'Вернуть данные',
+ h_test:'Проверка экранов',x1:'Включить всё',x2:'Бегущий пиксель',x3:'Погасить',x0:'Стоп',test_hint:'Режим «Включить всё» ограничивает яркость, чтобы не просадить питание.',
+ h_ota:'Обновление прошивки',ota_btn:'Включить режим обновления',
+ ota_hint:'ESP32 отключит Bluetooth и создаст Wi-Fi ScooterDisplay-OTA (пароль 12345678). Подключись к нему, открой http://192.168.4.1 и загрузи файл .ino.bin. Если ничего не загружать, через 5 минут она вернётся в обычный режим.',
+ ota_on:'Режим обновления включён. Подключись к Wi-Fi ScooterDisplay-OTA (пароль 12345678), открой http://192.168.4.1 и загрузи файл .ino.bin. Bluetooth отключён до перезагрузки.',
+ ota_confirm:'ESP32 отключит Bluetooth и создаст Wi-Fi ScooterDisplay-OTA. Продолжить?'
+},
+en:{
+ st_off:'not connected',st_on:'connected',st_conn:'connecting...',st_nodev:'no device selected',st_err:'error',st_send:'send error',st_noconn:'not connected',
+ h_conn:'Connection',connect:'Connect via Bluetooth',disconnect:'Disconnect',all:'Show all devices',
+ conn_hint:'Use Chrome on Android or desktop. On Android turn on Bluetooth and location. Do not connect the board in the phone settings, the page connects by itself. If the list is empty: forget ScooterDisplay in Bluetooth settings and press EN on the board.',
+ w_insecure:'This page is not served over a secure address. It needs https:// (for example GitHub Pages); a file opened on a phone will not work.',
+ w_nobt:'This browser does not support Web Bluetooth. Open the page in Chrome on Android or desktop (it does not work on iPhone).',
+ h_diag:'Diagnostics',d_secure:'Secure address (HTTPS)',d_api:'Web Bluetooth',d_adapter:'Bluetooth on this device',d_browser:'Browser',d_err:'Last error',
+ h_src:'Data source',demo:'Demo',manual:'Manual',src_hint:'In demo mode speed, current and charge change on their own. Moving any slider below switches to manual.',
+ h_main:'Main display and data',l_speed:'Speed',l_volts:'Volts',l_amps:'Current, A',l_pct:'Battery, %',l_bright:'Brightness',
+ t_left:'Left turn',t_right:'Right turn',t_light:'Headlight',t_err:'Error (X)',t_mph:'mph',
+ h_icons:'Paired display icons',i_0:'i',i_1:'X',i_2:'P',i_3:'Speedometer',
+ c0:'Off',c1:'Red',c2:'Blue',c3:'Red+blue',c4:'Green',c5:'Red+green',c6:'Blue+green',c7:'All colors',c8:'Auto',
+ h_text:'Custom text',l_strip:'Strip',l_matrix:'Matrix',show:'Show',clear:'Clear',text_hint:'Latin letters, digits and - . : ! / % + = ?  Long text scrolls.',
+ h_paint:'Drawing',p_strip:'Strip 35×5',p_matrix:'Matrix 11×13',p_clear:'Clear',p_fill:'Fill',p_back:'Back to data',
+ h_test:'Display test',x1:'All on',x2:'Moving pixel',x3:'Blank',x0:'Stop',test_hint:'"All on" limits the brightness so the supply does not sag.',
+ h_ota:'Firmware update',ota_btn:'Start update mode',
+ ota_hint:'The ESP32 turns Bluetooth off and creates the Wi-Fi network ScooterDisplay-OTA (password 12345678). Join it, open http://192.168.4.1 and upload the .ino.bin file. If nothing is uploaded it returns to normal mode after 5 minutes.',
+ ota_on:'Update mode is on. Join the Wi-Fi network ScooterDisplay-OTA (password 12345678), open http://192.168.4.1 and upload the .ino.bin file. Bluetooth stays off until the board restarts.',
+ ota_confirm:'The ESP32 will turn Bluetooth off and create the Wi-Fi network ScooterDisplay-OTA. Continue?'
+}};
+function store(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+function load(k){try{return localStorage.getItem(k)}catch(e){return null}}
+let lang=load('lang')||((navigator.language||'en').toLowerCase().startsWith('ru')?'ru':'en');
+let theme=load('theme')||'violet';
+const T=k=>(I18N[lang][k]!==undefined?I18N[lang][k]:k);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
-// состояние страницы (отправляется заново при подключении)
+/* ---------- состояние страницы ---------- */
+let dev=null,chr=null,busy=false,uid=0;
+const pend=new Map();
 let mode=0;
 const val={speed:30,volts:42,amps:10,pct:80};
 const flags={left:0,right:0,light:0,err:0,mph:0};
 let bright=4;
 const icons=[8,8,8,8];
+let stKey='st_off',stOk=false,stExtra='',lastErr='',adapter='?';
 
-function st(m,ok){const s=$('st');s.textContent=m;s.className=ok?'ok':''}
+function renderStatus(){const s=$('st');s.textContent=T(stKey)+(stExtra?': '+stExtra:'');s.className='chip'+(stOk?' ok':'')}
+function st(key,ok,extra){stKey=key;stOk=!!ok;stExtra=extra||'';renderStatus()}
+function uaInfo(){
+  const m=navigator.userAgent.match(/(SamsungBrowser|EdgA|Edg|OPR|Firefox|CriOS|Chrome)\/([\d.]+)/);
+  return (m?m[1]+' '+m[2].split('.')[0]:'?')+(/Android/.test(navigator.userAgent)?' / Android':'');
+}
+function renderDiag(){
+  const rows=[['d_secure',window.isSecureContext?'yes':'NO'],['d_api',navigator.bluetooth?'yes':'NO'],['d_adapter',adapter],['d_browser',uaInfo()],['d_err',lastErr||'-']];
+  $('diag').innerHTML=rows.map(r=>'<div><span>'+esc(T(r[0]))+'</span><b>'+esc(r[1])+'</b></div>').join('');
+}
+function setWarn(){
+  let k='';
+  if(!window.isSecureContext)k='w_insecure';
+  else if(!navigator.bluetooth)k='w_nobt';
+  $('warn').dataset.i=k;
+  $('bc').disabled=!!k;$('bc2').disabled=!!k;
+}
+function applyLang(){
+  document.documentElement.lang=lang;
+  document.querySelectorAll('[data-i]').forEach(e=>{e.textContent=e.dataset.i?T(e.dataset.i):''});
+  $('lg').textContent=lang==='ru'?'EN':'RU';
+  renderStatus();renderDiag();
+}
+function applyTheme(){
+  document.documentElement.dataset.theme=theme;
+  $('th').textContent=theme==='bw'?'Violet':'B&W';
+}
+$('lg').onclick=()=>{lang=lang==='ru'?'en':'ru';store('lang',lang);applyLang()};
+$('th').onclick=()=>{theme=theme==='bw'?'violet':'bw';store('theme',theme);applyTheme()};
 
-if(!navigator.bluetooth){
-  $('warn').textContent='Этот браузер не поддерживает Web Bluetooth. Открой страницу в Chrome на Android или ПК (на iPhone не работает).';
-  $('bc').disabled=true;
-  $('bc2').disabled=true;
+if(navigator.bluetooth&&navigator.bluetooth.getAvailability){
+  navigator.bluetooth.getAvailability().then(a=>{adapter=a?'yes':'NO';renderDiag()}).catch(()=>{});
 }
 
+/* ---------- отправка команд ---------- */
 async function pump(){
   if(busy)return;
   busy=true;
-  while(pend.size && chr){
+  while(pend.size&&chr){
     const e=pend.entries().next().value;
     pend.delete(e[0]);
     try{
       const data=enc.encode(e[1]);
-      if(chr.writeValueWithResponse) await chr.writeValueWithResponse(data);
+      if(chr.writeValueWithResponse)await chr.writeValueWithResponse(data);
       else await chr.writeValue(data);
-    }catch(err){st('ошибка отправки');}
+    }catch(err){lastErr=(err&&err.message)||String(err);renderDiag();st('st_send')}
   }
   busy=false;
 }
 function tx(key,msg){
-  if(!chr){st('нет подключения');return}
+  if(!chr){st('st_noconn');return}
   pend.set(key,msg);
   pump();
 }
-function dropPrefix(p){for(const k of [...pend.keys()]) if(k.startsWith(p)) pend.delete(k)}
+function dropPrefix(p){for(const k of [...pend.keys()])if(k.startsWith(p))pend.delete(k)}
 
 function setConn(on){
-  $('bc').textContent=on?'Отключиться':'Подключиться по Bluetooth';
-  $('bc').classList.toggle('on',!on);
-  st(on?'подключено':'не подключено',on);
+  const b=$('bc');
+  b.dataset.i=on?'disconnect':'connect';
+  b.classList.toggle('on',!on);
+  st(on?'st_on':'st_off',on);
+  applyLang();
 }
+function sendData(){tx('V','V'+val.speed+','+val.volts+','+val.amps+','+val.pct)}
+function sendFlags(){tx('F','F'+flags.left+flags.right+flags.light+flags.err+flags.mph)}
+function setMode(m){mode=m;$('m0').classList.toggle('on',m==0);$('m1').classList.toggle('on',m==1);tx('M','M'+m)}
 function syncAll(){
-  tx('M','M'+mode);
-  sendData();
-  sendFlags();
-  tx('B','B'+bright);
-  for(let k=0;k<4;k++) tx('I'+k,'I'+k+icons[k]);
+  tx('M','M'+mode);sendData();sendFlags();tx('B','B'+bright);
+  for(let k=0;k<4;k++)tx('I'+k,'I'+k+icons[k]);
 }
+
 async function connect(all){
   try{
     dev=await navigator.bluetooth.requestDevice(all?
       {acceptAllDevices:true,optionalServices:[SERVICE]}:
       {filters:[{services:[SERVICE]},{namePrefix:'ScooterDisplay'}],optionalServices:[SERVICE]});
     dev.addEventListener('gattserverdisconnected',()=>{chr=null;pend.clear();setConn(false)});
-    st('подключаюсь...');
+    st('st_conn');
     const srv=await dev.gatt.connect();
     const svc=await srv.getPrimaryService(SERVICE);
     chr=await svc.getCharacteristic(CHAR);
     setConn(true);
     syncAll();
   }catch(e){
-    st(e&&e.name==='NotFoundError'?'устройство не выбрано':'ошибка: '+(e&&e.message?e.message:e));
+    const msg=(e&&e.name?e.name:'')+(e&&e.message?': '+e.message:'');
+    lastErr=msg;renderDiag();
+    if(e&&e.name==='NotFoundError')st('st_nodev');
+    else st('st_err',false,msg);
   }
 }
 $('bc').onclick=()=>{
-  if(dev&&dev.gatt.connected){dev.gatt.disconnect()}
+  if(dev&&dev.gatt&&dev.gatt.connected)dev.gatt.disconnect();
   else connect(false);
 };
 $('bc2').onclick=()=>connect(true);
-
-function sendData(){tx('V','V'+val.speed+','+val.volts+','+val.amps+','+val.pct)}
-function sendFlags(){tx('F','F'+flags.left+flags.right+flags.light+flags.err+flags.mph)}
-function setMode(m){mode=m;$('m0').classList.toggle('on',m==0);$('m1').classList.toggle('on',m==1);tx('M','M'+m)}
 $('m0').onclick=()=>setMode(0);
 $('m1').onclick=()=>setMode(1);
 
-[['speed','Скорость',0,99,30],['volts','Вольты',20,50,42],['amps','Ток, A',0,99,10],['pct','Заряд, %',0,100,80],['bright','Яркость',0,15,4]].forEach(a=>{
+/* ---------- элементы управления ---------- */
+[['speed','l_speed',0,99,30],['volts','l_volts',20,50,42],['amps','l_amps',0,99,10],['pct','l_pct',0,100,80],['bright','l_bright',0,15,4]].forEach(a=>{
   const k=a[0],r=document.createElement('div');r.className='row';
-  r.innerHTML='<label>'+a[1]+'</label><input type="range" min="'+a[2]+'" max="'+a[3]+'" value="'+a[4]+'"><output>'+a[4]+'</output>';
+  r.innerHTML='<label for="sl_'+k+'" data-i="'+a[1]+'"></label><input id="sl_'+k+'" type="range" min="'+a[2]+'" max="'+a[3]+'" value="'+a[4]+'"><output>'+a[4]+'</output>';
   const i=r.querySelector('input'),o=r.querySelector('output');
   i.oninput=()=>{
     o.textContent=i.value;
@@ -179,21 +290,22 @@ $('m1').onclick=()=>setMode(1);
   $('sl').appendChild(r);
 });
 
-[['left','Левый поворот'],['right','Правый поворот'],['light','Фара'],['err','Ошибка (X)'],['mph','mph']].forEach(a=>{
-  const b=document.createElement('button');b.textContent=a[1];
+[['left','t_left'],['right','t_right'],['light','t_light'],['err','t_err'],['mph','t_mph']].forEach(a=>{
+  const b=document.createElement('button');b.dataset.i=a[1];
   b.onclick=()=>{b.classList.toggle('on');flags[a[0]]=b.classList.contains('on')?1:0;sendFlags()};
   $('tg').appendChild(b);
 });
 
-const cols=['Выкл','Красный','Синий','Красный+синий','Зелёный','Красный+зелёный','Синий+зелёный','Все цвета','Авто'];
-['i','X','P','Спидометр'].forEach((n,k)=>{
+[0,1,2,3].forEach(k=>{
   const r=document.createElement('div');r.className='row';
-  r.innerHTML='<label>'+n+'</label><select style="flex:1">'+cols.map((c,j)=>'<option value="'+j+'"'+(j==8?' selected':'')+'>'+c+'</option>').join('')+'</select>';
+  let opts='';
+  for(let j=0;j<9;j++)opts+='<option value="'+j+'" data-i="c'+j+'"'+(j==8?' selected':'')+'></option>';
+  r.innerHTML='<label for="ic_'+k+'" data-i="i_'+k+'"></label><select id="ic_'+k+'" style="flex:1">'+opts+'</select>';
   r.querySelector('select').onchange=e=>{icons[k]=+e.target.value;tx('I'+k,'I'+k+icons[k])};
   $('ic').appendChild(r);
 });
 
-// текст: отправляется кусками по 16 символов
+/* текст: отправляется кусками по 16 символов */
 function sendText(d,text){
   const t=text.toUpperCase().replace(/[^\x20-\x7E]/g,'').slice(0,60);
   dropPrefix('T'+d);
@@ -207,7 +319,7 @@ $('c1').onclick=()=>{$('t1').value='';sendText('s','')};
 $('b2').onclick=()=>sendText('m',$('t2').value);
 $('c2').onclick=()=>{$('t2').value='';sendText('m','')};
 
-// рисование
+/* рисование */
 function makeGrid(id,w,h,onchange){
   const g=$(id);g.style.gridTemplateColumns='repeat('+w+',1fr)';
   const cells=[];
@@ -232,14 +344,13 @@ function makeGrid(id,w,h,onchange){
     fill:()=>cells.forEach(c=>c.classList.add('on'))
   };
 }
-
 function makePaint(id,w,h,d,digits){
   let on=false;
-  const grid=makeGrid(id,w,h,i=>{ if(!on) sendAll(); else sendRow(Math.floor(i/w)); });
+  const grid=makeGrid(id,w,h,i=>{if(!on)sendAll();else sendRow(Math.floor(i/w))});
   function rowMsg(r){
     const bits=grid.bits().slice(r*w,(r+1)*w);
     let v=0n;
-    for(const b of bits) v=(v<<1n)|BigInt(+b);
+    for(const b of bits)v=(v<<1n)|BigInt(+b);
     v<<=BigInt(digits*4-w);
     return 'P'+d+r.toString(16)+v.toString(16).padStart(digits,'0');
   }
@@ -263,10 +374,16 @@ $('om').onclick=()=>pm.off();
 document.querySelectorAll('[data-t]').forEach(b=>{b.onclick=()=>tx('X','X'+b.dataset.t)});
 
 $('ota').onclick=()=>{
-  if(!confirm('ESP32 отключит Bluetooth и создаст Wi-Fi ScooterDisplay-OTA. Продолжить?'))return;
+  if(!confirm(T('ota_confirm')))return;
   tx('U','U');
-  $('otahint').textContent='Режим обновления включён. Подключись к Wi-Fi ScooterDisplay-OTA (пароль 12345678), открой http://192.168.4.1 и загрузи файл .ino.bin. Bluetooth отключён до перезагрузки.';
+  $('otahint').dataset.i='ota_on';
+  applyLang();
 };
+
+/* ---------- запуск ---------- */
+setWarn();
+applyTheme();
+applyLang();
 </script>
 </body>
 </html>
