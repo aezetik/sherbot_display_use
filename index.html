@@ -38,9 +38,12 @@ button:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visi
 .btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
 .hint{color:var(--mut);font-size:13px;margin:8px 0 0}
 .warn{color:var(--bad);font-size:14px;margin:8px 0 0}
-.grid{display:grid;gap:3px;touch-action:none;user-select:none;-webkit-user-select:none;margin:8px 0}
-.cell{aspect-ratio:1;background:var(--field);border-radius:3px}
+[hidden]{display:none!important}
+.gridwrap{overflow:hidden;margin:8px 0}
+.grid{--cs:20px;display:grid;gap:3px;width:max-content;touch-action:none;user-select:none;-webkit-user-select:none}
+.cell{width:var(--cs);height:var(--cs);background:var(--field);border-radius:3px}
 .cell.on{background:#fff}
+.gscroll{width:100%;margin:2px 0 6px}
 details summary{cursor:pointer;font-weight:600}
 #diag{margin-top:8px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
 #diag div{display:flex;justify-content:space-between;gap:12px;padding:3px 0;border-bottom:1px solid var(--line)}
@@ -93,10 +96,12 @@ details summary{cursor:pointer;font-weight:600}
 <section>
   <h2 data-i="h_paint"></h2>
   <p class="hint" style="margin:0" data-i="p_strip"></p>
-  <div class="grid" id="gs"></div>
+  <div class="gridwrap" id="gsw"><div class="grid" id="gs"></div></div>
+  <input type="range" id="gss" class="gscroll" min="0" max="100" value="0" aria-label="Scroll">
+  
   <div class="btns" style="margin-top:0"><button id="cs" data-i="p_clear"></button><button id="fs" data-i="p_fill"></button><button id="os" data-i="p_back"></button></div>
   <p class="hint" style="margin-top:14px" data-i="p_matrix"></p>
-  <div class="grid" id="gm" style="max-width:230px"></div>
+  <div class="gridwrap" id="gmw"><div class="grid" id="gm"></div></div>
   <div class="btns" style="margin-top:0"><button id="cm" data-i="p_clear"></button><button id="fm" data-i="p_fill"></button><button id="om" data-i="p_back"></button></div>
 </section>
 
@@ -128,7 +133,7 @@ ru:{
  conn_hint:'Нужен Chrome на Android или на ПК. На Android включи Bluetooth и геолокацию. Не подключай плату через настройки телефона, страница подключается сама. Если список пуст: забудь ScooterDisplay в настройках Bluetooth и нажми EN на плате.',
  w_insecure:'Страница открыта не по защищённому адресу. Нужен https:// (например, GitHub Pages), файл с телефона не подойдёт.',
  w_nobt:'Этот браузер не поддерживает Web Bluetooth. Открой страницу в Chrome на Android или ПК (на iPhone не работает).',
- h_diag:'Диагностика',d_secure:'Защищённый адрес (HTTPS)',d_api:'Web Bluetooth',d_adapter:'Bluetooth на устройстве',d_browser:'Браузер',d_err:'Последняя ошибка',
+ h_diag:'Диагностика',d_secure:'Защищённый адрес (HTTPS)',d_api:'Web Bluetooth',d_adapter:'Bluetooth на устройстве',d_browser:'Браузер',d_err:'Последняя ошибка',d_tx:'Последняя команда',
  h_src:'Источник данных',demo:'Демо',manual:'Ручной',src_hint:'В демо скорость, ток и заряд меняются сами. Любой ползунок ниже переключает в ручной режим.',
  h_main:'Главный экран и данные',l_speed:'Скорость',l_volts:'Вольты',l_amps:'Ток, A',l_pct:'Заряд, %',l_bright:'Яркость',
  t_left:'Левый поворот',t_right:'Правый поворот',t_light:'Фара',t_err:'Ошибка (X)',t_mph:'mph',
@@ -148,7 +153,7 @@ en:{
  conn_hint:'Use Chrome on Android or desktop. On Android turn on Bluetooth and location. Do not connect the board in the phone settings, the page connects by itself. If the list is empty: forget ScooterDisplay in Bluetooth settings and press EN on the board.',
  w_insecure:'This page is not served over a secure address. It needs https:// (for example GitHub Pages); a file opened on a phone will not work.',
  w_nobt:'This browser does not support Web Bluetooth. Open the page in Chrome on Android or desktop (it does not work on iPhone).',
- h_diag:'Diagnostics',d_secure:'Secure address (HTTPS)',d_api:'Web Bluetooth',d_adapter:'Bluetooth on this device',d_browser:'Browser',d_err:'Last error',
+ h_diag:'Diagnostics',d_secure:'Secure address (HTTPS)',d_api:'Web Bluetooth',d_adapter:'Bluetooth on this device',d_browser:'Browser',d_err:'Last error',d_tx:'Last command',
  h_src:'Data source',demo:'Demo',manual:'Manual',src_hint:'In demo mode speed, current and charge change on their own. Moving any slider below switches to manual.',
  h_main:'Main display and data',l_speed:'Speed',l_volts:'Volts',l_amps:'Current, A',l_pct:'Battery, %',l_bright:'Brightness',
  t_left:'Left turn',t_right:'Right turn',t_light:'Headlight',t_err:'Error (X)',t_mph:'mph',
@@ -177,7 +182,7 @@ const val={speed:30,volts:42,amps:10,pct:80};
 const flags={left:0,right:0,light:0,err:0,mph:0};
 let bright=4;
 const icons=[8,8,8,8];
-let stKey='st_off',stOk=false,stExtra='',lastErr='',adapter='?';
+let stKey='st_off',stOk=false,stExtra='',lastErr='',lastTx='',adapter='?';
 
 function renderStatus(){const s=$('st');s.textContent=T(stKey)+(stExtra?': '+stExtra:'');s.className='chip'+(stOk?' ok':'')}
 function st(key,ok,extra){stKey=key;stOk=!!ok;stExtra=extra||'';renderStatus()}
@@ -186,7 +191,7 @@ function uaInfo(){
   return (m?m[1]+' '+m[2].split('.')[0]:'?')+(/Android/.test(navigator.userAgent)?' / Android':'');
 }
 function renderDiag(){
-  const rows=[['d_secure',window.isSecureContext?'yes':'NO'],['d_api',navigator.bluetooth?'yes':'NO'],['d_adapter',adapter],['d_browser',uaInfo()],['d_err',lastErr||'-']];
+  const rows=[['d_secure',window.isSecureContext?'yes':'NO'],['d_api',navigator.bluetooth?'yes':'NO'],['d_adapter',adapter],['d_browser',uaInfo()],['d_err',lastErr||'-'],['d_tx',lastTx||'-']];
   $('diag').innerHTML=rows.map(r=>'<div><span>'+esc(T(r[0]))+'</span><b>'+esc(r[1])+'</b></div>').join('');
 }
 function setWarn(){
@@ -224,6 +229,7 @@ async function pump(){
       const data=enc.encode(e[1]);
       if(chr.writeValueWithResponse)await chr.writeValueWithResponse(data);
       else await chr.writeValue(data);
+      lastTx=e[1];renderDiag();
     }catch(err){lastErr=(err&&err.message)||String(err);renderDiag();st('st_send')}
   }
   busy=false;
@@ -309,6 +315,7 @@ $('m1').onclick=()=>setMode(1);
 function sendText(d,text){
   const t=text.toUpperCase().replace(/[^\x20-\x7E]/g,'').slice(0,60);
   dropPrefix('T'+d);
+  if(t!==''&&paintObjs[d])paintObjs[d].off();
   if(t===''){tx('T'+d+(uid++),'T'+d+'0');return}
   for(let i=0;i<t.length;i+=16){
     tx('T'+d+(uid++),'T'+d+(i===0?'0':'1')+t.slice(i,i+16));
@@ -321,14 +328,14 @@ $('c2').onclick=()=>{$('t2').value='';sendText('m','')};
 
 /* рисование */
 function makeGrid(id,w,h,onchange){
-  const g=$(id);g.style.gridTemplateColumns='repeat('+w+',1fr)';
+  const g=$(id);g.style.gridTemplateColumns='repeat('+w+',var(--cs))';
   const cells=[];
-  for(let i=0;i<w*h;i++){const c=document.createElement('div');c.className='cell';c.dataset.i=i;g.appendChild(c);cells.push(c)}
+  for(let i=0;i<w*h;i++){const c=document.createElement('div');c.className='cell';c.dataset.n=i;g.appendChild(c);cells.push(c)}
   let paint=null;
   const isCell=el=>el&&el.classList&&el.classList.contains('cell')&&el.parentNode===g;
   function apply(el){
     if(!isCell(el))return;
-    if(el.classList.contains('on')!==paint){el.classList.toggle('on',paint);onchange(+el.dataset.i)}
+    if(el.classList.contains('on')!==paint){el.classList.toggle('on',paint);onchange(+el.dataset.n)}
   }
   g.addEventListener('pointerdown',e=>{
     e.preventDefault();
@@ -364,6 +371,16 @@ function makePaint(id,w,h,d,digits){
 }
 const ps=makePaint('gs',35,5,'s',9);
 const pm=makePaint('gm',11,13,'m',3);
+const paintObjs={s:ps,m:pm};
+function setupScroll(wrapId,sliderId){
+  const w=$(wrapId),s=$(sliderId);
+  const range=()=>Math.max(0,w.scrollWidth-w.clientWidth);
+  const upd=()=>{const hide=range()<=0;s.hidden=hide;s.disabled=hide};
+  s.oninput=()=>{w.scrollLeft=range()*s.value/100};
+  window.addEventListener('resize',upd);
+  upd();
+}
+setupScroll('gsw','gss');
 $('cs').onclick=()=>ps.clear();
 $('fs').onclick=()=>ps.fill();
 $('os').onclick=()=>ps.off();
